@@ -1,46 +1,78 @@
 #include <iostream>
 #include <cctype>
-#include <locale>
-#include "modalphacipher.h"
-#include <codecvt>
-#include <typeinfo>
+#include "modAlphaCipher.h"
 
 using namespace std;
 
-void check(const wstring& Text, const wstring& key, const bool destructCipherText=false)
-{
-    try {
-        wstring cipherText;
-        wstring decryptedText;
-        modalphacipher cipher(key);
-        cipherText = cipher.encrypt(Text); // зашифровывание
-        if (destructCipherText) // надо "портить"?
-            cipherText.front() = tolower(cipherText.front()); // "портим"
-        decryptedText = cipher.decrypt(cipherText); // расшифровывание
-        wcout<<L"key="<<key<<endl;
-        wcout<<Text<<endl;
-        wcout<<cipherText<<endl;
-        wcout<<decryptedText<<endl;
-    } catch (const cipher_error & e) {
-        wcerr<<"Error: "<<e.what()<<endl;
-    }
-}
-
-// проверка, чтобы строка состояла только из прописных букв
+/**
+ * @brief Проверяет, является ли строка допустимым текстом для шифрования.
+ *
+ * Строка считается допустимой, если все символы - буквы в верхнем регистре.
+ *
+ * @param s Строка для проверки.
+ * @return true, если строка допустима, в противном случае - false.
+ */
 bool isValid(const wstring& s)
-{
-    for(auto c:s)
-        if (!iswalpha(c) || !iswupper(c))
-            return false;
-    return true;
-}
-int main()
 {
     locale loc("ru_RU.UTF-8");
     locale::global(loc);
-    check(L"ПРИВЕТ",L"ПРОЩАЙ");
-    check(L"ПРОЩАЙ",L"");
-    check(L"ПРОЩАЙ",L"ПРИВЕТ321");
-    check(L"П Р О Щ А Й",L"ПРИВЕТ");
-    check(L"321",L"ПРИВЕТ");
+    for(auto c: s)
+        if (!isalpha(c, loc) || !isupper(c, loc))
+            return false;
+    return true;
+}
+
+/**
+ * @brief Основная функция программы для шифрования и дешифрования текста.
+ *
+ * Программа запрашивает у пользователя ключ и текст, затем выполняет
+ * шифрование или дешифрование в зависимости от выбранной операции.
+ *
+ * @param argc Количество аргументов командной строки.
+ * @param argv Массив аргументов командной строки.
+ * @return Код возврата программы.
+ */
+int main(int argc, char **argv)
+{
+    locale loc("ru_RU.UTF-8");
+    locale::global(loc);
+
+    wstring key;
+    wstring text;
+    unsigned op;
+
+    wcout << "Cipher ready. Input key: ";
+    wcin >> key;
+
+    if (!isValid(key)) {
+        cerr << "key not valid\n";
+        return 1;
+    }
+
+    wcout << "Key loaded\n";
+    modAlphaCipher cipher(key);
+
+    do {
+        wcout << "Cipher ready. Input operation (0-exit, 1-encrypt, 2-decrypt): ";
+        wcin >> op;
+
+        if (op > 2) {
+            wcout << "Illegal operation\n";
+        } else if (op > 0) {
+            wcout << "Cipher ready. Input text: ";
+            wcin >> text;
+
+            if (isValid(text)) {
+                if (op == 1) {
+                    wcout << "Encrypted text: " << cipher.encrypt(text) << endl;
+                } else {
+                    wcout << "Decrypted text: " << cipher.decrypt(text) << endl;
+                }
+            } else {
+                wcout << "Operation aborted: invalid text\n";
+            }
+        }
+    } while (op != 0);
+
+    return 0;
 }
